@@ -156,3 +156,47 @@ body {
   .dashboard-stats { grid-template-columns: 1fr; }
   .login-card { padding: 24px 20px; }
 }
+
+/* ===== Barre d'outils des listes (Projets, Actions...) ===== */
+.list-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.list-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.filter-chip {
+  padding: 7px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(6, 59, 42, .18);
+  background: var(--white);
+  color: var(--muted);
+  font-size: .85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.filter-chip-active {
+  background: var(--green, #0B6B3A);
+  border-color: var(--green, #0B6B3A);
+  color: #fff;
+}
+.search-input {
+  padding: 9px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(6, 59, 42, .18);
+  font-size: .9rem;
+  min-width: 0;
+  flex: 1 1 200px;
+}
+
+@media (max-width: 640px) {
+  .list-toolbar { flex-direction: column; align-items: stretch; }
+  .list-toolbar > div { width: 100%; }
+  .search-input { flex: 1 1 auto; }
+}

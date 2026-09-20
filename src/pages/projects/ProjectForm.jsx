@@ -6,6 +6,30 @@ import { LoadingState } from '../../components/DataState.jsx';
 
 const CATEGORIES = ['Orphelins', 'Personnes âgées', 'Veuves', 'Nourriture', 'Communautés', 'Autres'];
 
+const MAX_IMAGE_KB = 700; // marge sous la limite de 1 Mo par document Firestore
+
+function compressImageToBase64(file, maxWidth = 900, quality = 0.72) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxWidth / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => reject(new Error('Image illisible.'));
+      img.src = event.target.result;
+    };
+    reader.onerror = () => reject(new Error('Lecture du fichier impossible.'));
+    reader.readAsDataURL(file);
+  });
+}
+
 const EMPTY_FORM = {
   title: '',
   shortDescription: '',
@@ -28,6 +52,7 @@ export default function ProjectForm() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
+  const [compressing, setCompressing] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -51,6 +76,27 @@ export default function ProjectForm() {
 
   const updateField = (field) => (event) => {
     setForm((prev) => ({ ...prev, [field]: event.target.value }));
+  };
+
+  const handleImageChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setCompressing(true);
+    setError('');
+    try {
+      const dataUrl = await compressImageToBase64(file);
+      const approxKb = Math.round((dataUrl.length * 0.75) / 1024);
+      if (approxKb > MAX_IMAGE_KB) {
+        setError(`Image encore trop lourde une fois compressée (~${approxKb} Ko). Essayez une photo plus simple ou moins grande.`);
+      } else {
+        setForm((prev) => ({ ...prev, imageUrl: dataUrl }));
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Impossible de traiter cette image.");
+    } finally {
+      setCompressing(false);
+    }
   };
 
   const persist = async (nextStatus) => {
@@ -114,8 +160,9 @@ export default function ProjectForm() {
           </label>
 
           <label className="form-field">
-            <span>Image principale (URL)</span>
-            <input value={form.imageUrl} onChange={updateField('imageUrl')} placeholder="https://..." />
+            <span>Photo principale</span>
+            <input type="file" accept="image/*" onChange={handleImageChange} />
+            {compressing ? <small>Compression de l'image en cours...</small> : null}
           </label>
 
           {form.imageUrl ? <img src={form.imageUrl} alt="Aperçu" className="form-image-preview" /> : null}
@@ -175,10 +222,10 @@ export default function ProjectForm() {
           <Link to={isEdit ? `/projets/${id}` : '/projets'} className="btn btn-ghost">
             Annuler
           </Link>
-          <button type="submit" className="btn btn-ghost" disabled={saving}>
+          <button type="submit" className="btn btn-ghost" disabled={saving || compressing}>
             Enregistrer
           </button>
-          <button type="button" className="btn btn-primary" disabled={saving} onClick={() => persist('en_cours')}>
+          <button type="button" className="btn btn-primary" disabled={saving || compressing} onClick={() => persist('en_cours')}>
             {saving ? 'Enregistrement...' : 'Publier'}
           </button>
         </div>
