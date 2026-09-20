@@ -10,6 +10,14 @@ import ProjectForm from './pages/projects/ProjectForm.jsx';
 import ProjectDetail from './pages/projects/ProjectDetail.jsx';
 import ActionsList from './pages/actions/ActionsList.jsx';
 import ActionForm from './pages/actions/ActionForm.jsx';
+import NewsList from './pages/news/NewsList.jsx';
+import NewsForm from './pages/news/NewsForm.jsx';
+import GalleryList from './pages/gallery/GalleryList.jsx';
+import DonationsList from './pages/donations/DonationsList.jsx';
+import VolunteersList from './pages/volunteers/VolunteersList.jsx';
+import MessagesList from './pages/messages/MessagesList.jsx';
+import StatisticsPage from './pages/settings/StatisticsPage.jsx';
+import SettingsPage from './pages/settings/SettingsPage.jsx';
 
 export default function App() {
   return (
@@ -35,14 +43,16 @@ export default function App() {
           <Route path="actions/nouveau" element={<ActionForm />} />
           <Route path="actions/:id/modifier" element={<ActionForm />} />
 
-          <Route path="actualites" element={<Placeholder title="Actualités" />} />
-          <Route path="galerie" element={<Placeholder title="Galerie" />} />
-          <Route path="dons" element={<Placeholder title="Gestion des dons" />} />
-          <Route path="benevoles" element={<Placeholder title="Bénévoles" />} />
-          <Route path="messages" element={<Placeholder title="Messages" />} />
-          <Route path="statistiques" element={<Placeholder title="Statistiques" />} />
+          <Route path="actualites" element={<NewsList />} />
+          <Route path="actualites/nouveau" element={<NewsForm />} />
+          <Route path="actualites/:id/modifier" element={<NewsForm />} />
+          <Route path="galerie" element={<GalleryList />} />
+          <Route path="dons" element={<DonationsList />} />
+          <Route path="benevoles" element={<VolunteersList />} />
+          <Route path="messages" element={<MessagesList />} />
+          <Route path="statistiques" element={<StatisticsPage />} />
           <Route path="notifications" element={<Placeholder title="Notifications" />} />
-          <Route path="parametres" element={<Placeholder title="Paramètres" />} />
+          <Route path="parametres" element={<SettingsPage />} />
           <Route path="profil" element={<Placeholder title="Mon profil" />} />
         </Route>
         <Route path="*" element={<Placeholder title="Page introuvable" />} />

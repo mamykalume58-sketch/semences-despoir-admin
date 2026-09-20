@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { addDoc, collection, doc, getDoc, getDocs, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase.js';
 import { LoadingState } from '../../components/DataState.jsx';
+import { compressImageToBase64, MAX_IMAGE_KB } from '../../lib/image.js';
 
 const CATEGORIES = ['Personnes âgées', 'Veuves', 'Orphelins', 'Nourriture', 'Communautés', 'Autres'];
 
@@ -27,6 +28,7 @@ export default function ActionForm() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
+  const [compressing, setCompressing] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -63,6 +65,27 @@ export default function ActionForm() {
     setForm((prev) => ({ ...prev, [field]: event.target.value }));
   };
 
+  const handleImageChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setCompressing(true);
+    setError('');
+    try {
+      const dataUrl = await compressImageToBase64(file);
+      const approxKb = Math.round((dataUrl.length * 0.75) / 1024);
+      if (approxKb > MAX_IMAGE_KB) {
+        setError(`Image encore trop lourde une fois compressée (~${approxKb} Ko). Essayez une photo plus simple ou moins grande.`);
+      } else {
+        setForm((prev) => ({ ...prev, imageUrl: dataUrl }));
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Impossible de traiter cette image.");
+    } finally {
+      setCompressing(false);
+    }
+  };
+
   const persist = async (nextStatus) => {
     setSaving(true);
     setError('');
@@ -71,6 +94,7 @@ export default function ActionForm() {
         ...form,
         beneficiaires: Number(form.beneficiaires) || 0,
         status: nextStatus || form.status,
+        published: nextStatus ? true : Boolean(form.published),
         updatedAt: serverTimestamp(),
       };
       if (isEdit) {
@@ -120,8 +144,9 @@ export default function ActionForm() {
           </label>
 
           <label className="form-field">
-            <span>Image (URL)</span>
-            <input value={form.imageUrl} onChange={updateField('imageUrl')} placeholder="https://..." />
+            <span>Photo</span>
+            <input type="file" accept="image/*" onChange={handleImageChange} />
+            {compressing ? <small>Compression de l'image en cours...</small> : null}
           </label>
 
           {form.imageUrl ? <img src={form.imageUrl} alt="Aperçu" className="form-image-preview" /> : null}
@@ -178,10 +203,10 @@ export default function ActionForm() {
           <Link to="/actions" className="btn btn-ghost">
             Annuler
           </Link>
-          <button type="submit" className="btn btn-ghost" disabled={saving}>
+          <button type="submit" className="btn btn-ghost" disabled={saving || compressing}>
             Enregistrer
           </button>
-          <button type="button" className="btn btn-primary" disabled={saving} onClick={() => persist('en_cours')}>
+          <button type="button" className="btn btn-primary" disabled={saving || compressing} onClick={() => persist('en_cours')}>
             {saving ? 'Enregistrement...' : 'Publier'}
           </button>
         </div>
