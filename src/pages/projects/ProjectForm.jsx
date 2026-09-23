@@ -101,20 +101,26 @@ export default function ProjectForm() {
         collectedAmount: Number(form.collectedAmount) || 0,
         beneficiaires: Number(form.beneficiaires) || 0,
         status: nextStatus || form.status,
-        published: ['en_cours', 'termine'].includes(nextStatus || form.status),
+        published: nextStatus ? ['en_cours', 'termine'].includes(nextStatus) : Boolean(form.published),
         updatedAt: serverTimestamp(),
       };
+      let refId = id;
       if (isEdit) {
         await updateDoc(doc(db, 'projects', id), payload);
-        navigate(`/projets/${id}`);
       } else {
         payload.createdAt = serverTimestamp();
         const ref = await addDoc(collection(db, 'projects'), payload);
-        navigate(`/projets/${ref.id}`);
+        refId = ref.id;
       }
       if (payload.published && !wasPublished) {
-        notifySubscribers({ type: 'project', title: payload.title, description: payload.shortDescription, imageUrl: payload.imageUrl });
+        notifySubscribers({
+          type: 'project',
+          title: payload.title,
+          description: payload.shortDescription || payload.description,
+          imageUrl: payload.imageUrl,
+        });
       }
+      navigate(`/projets/${refId}`);
     } catch (err) {
       console.error(err);
       setError("Impossible d’enregistrer ce projet. " + (err.code || ''));
