@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { addDoc, collection, doc, getDoc, getDocs, serverTimestamp, updateDoc } from 'firebase/firestore';
-import { db } from '../../firebase.js';
+import { auth, db } from '../../firebase.js';
 import { LoadingState } from '../../components/DataState.jsx';
 import { compressImageToBase64, MAX_IMAGE_KB } from '../../lib/image.js';
 
@@ -19,6 +19,20 @@ const EMPTY_FORM = {
   imageUrl: '',
   status: 'planifiee',
 };
+
+async function notifySubscribers(data) {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) return;
+    await fetch('https://semences-despoir-shwary.mamykalume58.workers.dev/notify-subscribers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+  } catch (err) {
+    console.error('Notification abonnés échouée (non bloquant) :', err);
+  }
+}
 
 export default function ActionForm() {
   const { id } = useParams();
@@ -89,6 +103,7 @@ export default function ActionForm() {
   const persist = async (nextStatus) => {
     setSaving(true);
     setError('');
+    const wasPublished = Boolean(form.published);
     try {
       const payload = {
         ...form,
@@ -102,6 +117,9 @@ export default function ActionForm() {
       } else {
         payload.createdAt = serverTimestamp();
         await addDoc(collection(db, 'actions'), payload);
+      }
+      if (payload.published && !wasPublished) {
+        notifySubscribers({ type: 'action', title: payload.title, description: payload.description, imageUrl: payload.imageUrl });
       }
       navigate('/actions');
     } catch (err) {
